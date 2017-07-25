@@ -19,7 +19,8 @@
 
 (defn request [query lang]
   (let [resp (client/get
-               (request-url query lang))]
+               (request-url query lang)
+               {:cookie-policy :standard})]
     (parse-json
       (:body resp))))
 
