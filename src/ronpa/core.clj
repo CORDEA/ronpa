@@ -1,20 +1,25 @@
 (ns ronpa.core
   (:require [clj-http.client :as client]
-            [clojure.data.json :as json])
+            [clojure.data.json :as json]
+            [clojure.tools.cli :refer [parse-opts]])
   (:gen-class))
 
-(def ^:const url "https://ja.wikipedia.org/w/api.php?action=query&list=search&format=json&utf8=0")
-(def ^:const search-query "&srsearch=")
+(def ^:const url "https://%s.wikipedia.org/w/api.php?action=query&list=search&srsearch=%s&format=json&utf8=")
+
+(def cli-options
+  [["-l" "--lang LANG" "language"
+    :default "ja"]
+   ["-h" "--help"]])
 
 (defn parse-json [json]
   (json/read-str json :key-fn keyword))
 
-(defn request-url [query]
-  (str url search-query query))
+(defn request-url [query lang]
+  (format url lang query))
 
-(defn request [query]
+(defn request [query lang]
   (let [resp (client/get
-               (request-url query))]
+               (request-url query lang))]
     (parse-json
       (:body resp))))
 
@@ -29,12 +34,17 @@
   (doseq [it lst]
     (println it)))
 
+(defn run [query lang]
+  (output
+    (get-titles
+      (get-results
+        (request query lang)))))
+
 (defn -main
   [& args]
-  (if (= (count args) 1)
-    (let [query (nth args 0)]
-      (output
-        (get-titles
-          (get-results
-            (request query)))))
-    (throw (IllegalArgumentException. "Please specify the search query."))))
+  (let [opts (parse-opts args cli-options)]
+    (let [lang (:lang (:options opts)) optargs (:arguments opts)]
+      (if (= (count optargs) 1)
+        (let [query (nth optargs 0)]
+          (run query lang))
+        (throw (IllegalArgumentException. "Please specify the search query."))))))
