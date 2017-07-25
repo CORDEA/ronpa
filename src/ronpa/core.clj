@@ -4,22 +4,25 @@
             [clojure.tools.cli :refer [parse-opts]])
   (:gen-class))
 
-(def ^:const url "https://%s.wikipedia.org/w/api.php?action=query&list=search&srsearch=%s&format=json&utf8=")
+(def ^:const url "https://%s.wikipedia.org/w/api.php?action=query&list=search&srsearch=%s&srlimit=%d&format=json&utf8=")
 
 (def cli-options
   [["-l" "--lang LANG" "language"
     :default "ja"]
+   ["-c" "--count COUNT" "number of results"
+    :default 10
+    :parse-fn #(Integer/parseInt %)]
    ["-h" "--help"]])
 
 (defn parse-json [json]
   (json/read-str json :key-fn keyword))
 
-(defn request-url [query lang]
-  (format url lang query))
+(defn request-url [query lang cnt]
+  (format url lang query cnt))
 
-(defn request [query lang]
+(defn request [query lang cnt]
   (let [resp (client/get
-               (request-url query lang)
+               (request-url query lang cnt)
                {:cookie-policy :standard})]
     (parse-json
       (:body resp))))
@@ -35,17 +38,19 @@
   (doseq [it lst]
     (println it)))
 
-(defn run [query lang]
+(defn run [query lang cnt]
   (output
     (get-titles
       (get-results
-        (request query lang)))))
+        (request query lang cnt)))))
 
 (defn -main
   [& args]
   (let [opts (parse-opts args cli-options)]
-    (let [lang (:lang (:options opts)) optargs (:arguments opts)]
+    (let [lang (:lang (:options opts))
+          cnt (:count (:options opts))
+          optargs (:arguments opts)]
       (if (= (count optargs) 1)
         (let [query (nth optargs 0)]
-          (run query lang))
+          (run query lang cnt))
         (throw (IllegalArgumentException. "Please specify the search query."))))))
