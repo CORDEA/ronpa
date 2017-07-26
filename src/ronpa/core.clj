@@ -11,7 +11,8 @@
     :default "ja"]
    ["-c" "--count COUNT" "number of results"
     :default 10
-    :parse-fn #(Integer/parseInt %)]
+    :parse-fn #(Integer/parseInt %)
+    :validate [#(<= 1 % 50) "Please specify between 1 and 50."]]
    ["-h" "--help"]])
 
 (defn parse-json [json]
