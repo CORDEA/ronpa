@@ -5,6 +5,7 @@
   (:gen-class))
 
 (def ^:const url "https://%s.wikipedia.org/w/api.php?action=query&list=search&srsearch=%s&srlimit=%d&format=json&utf8=")
+(def ^:const warning "[WARNING] %s")
 
 (def cli-options
   [["-l" "--lang LANG" "language"
@@ -45,9 +46,15 @@
       (get-results
         (request query lang cnt)))))
 
+(defn show-opt-errors [lst]
+  (binding [*out* *err*]
+    (doseq [it lst]
+      (println (format warning it)))))
+
 (defn -main
   [& args]
   (let [opts (parse-opts args cli-options)]
+    (show-opt-errors (:errors opts))
     (let [lang (:lang (:options opts))
           cnt (:count (:options opts))
           optargs (:arguments opts)]
