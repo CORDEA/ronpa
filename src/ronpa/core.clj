@@ -16,6 +16,16 @@
     :validate [#(<= 1 % 50) "Please specify between 1 and 50."]]
    ["-h" "--help"]])
 
+(defn usage [summary]
+  (format "
+Search words from Wikipedia.
+
+Usage: ronpa [--help] [options]
+
+Options:
+%s
+" summary))
+
 (defn parse-json [json]
   (json/read-str json :key-fn keyword))
 
@@ -53,12 +63,13 @@
 
 (defn -main
   [& args]
-  (let [opts (parse-opts args cli-options)]
-    (show-opt-errors (:errors opts))
-    (let [lang (:lang (:options opts))
-          cnt (:count (:options opts))
-          optargs (:arguments opts)]
-      (if (= (count optargs) 1)
-        (let [query (nth optargs 0)]
-          (run query lang cnt))
-        (throw (IllegalArgumentException. "Please specify the search query."))))))
+  (let [{:keys [options arguments errors summary]} (parse-opts args cli-options)]
+    (show-opt-errors errors)
+    (if (:help options)
+      (println (usage summary))
+      (let [lang (:lang options)
+            cnt (:count options)]
+        (if (= (count arguments) 1)
+          (let [query (nth arguments 0)]
+            (run query lang cnt))
+          (throw (IllegalArgumentException. "Please specify the search query.")))))))
